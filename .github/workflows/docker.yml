@@ -22,7 +22,7 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=semver,pattern=v{{version}}
+            type=ref,event=tag
             type=raw,value=latest
 
       - name: Set up QEMU
