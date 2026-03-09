@@ -1,0 +1,37 @@
+#!/bin/sh
+
+set -e
+
+CHROME_USER="chrome"
+CHROME_HOME="/home/chrome"
+CHROME_DATA_DIR="$CHROME_HOME/chrome-data"
+
+if ! id "$CHROME_USER" >/dev/null 2>&1; then
+    /build/bin/create_user "$CHROME_USER" "$CHROME_USER"
+fi
+
+mkdir -p "$CHROME_DATA_DIR" "$CHROME_HOME/.config" "$CHROME_HOME/.cache"
+chown -R "$CHROME_USER:$CHROME_USER" "$CHROME_DATA_DIR" "$CHROME_HOME/.config" "$CHROME_HOME/.cache"
+
+exec su -s /bin/sh "$CHROME_USER" -c "HOME='$CHROME_HOME' USER='$CHROME_USER' LOGNAME='$CHROME_USER' exec google-chrome-stable \
+    --no-first-run \
+    --start-maximized \
+    --user-data-dir='$CHROME_DATA_DIR' \
+    --remote-debugging-port=19222 \
+    --disable-gpu \
+    --disable-software-rasterizer \
+    --disable-dev-shm-usage \
+    --disable-background-networking \
+    --disable-sync \
+    --disable-translate \
+    --disable-default-apps \
+    --disable-component-update \
+    --disable-domain-reliability \
+    --disable-client-side-phishing-detection \
+    --disable-hang-monitor \
+    --disable-popup-blocking \
+    --disable-prompt-on-repost \
+    --disable-breakpad \
+    --metrics-recording-only \
+    --no-default-browser-check \
+    --mute-audio"

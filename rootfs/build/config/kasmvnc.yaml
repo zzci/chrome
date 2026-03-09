@@ -1,0 +1,18 @@
+desktop:
+  resolution:
+    width: 1920
+    height: 1080
+  allow_resize: false
+  pixel_depth: 24
+
+network:
+  protocol: http
+  interface: 0.0.0.0
+  websocket_port: 80
+  ssl:
+    require_ssl: false
+
+logging:
+  log_writer_name: all
+  log_dest: logfile
+  level: 30

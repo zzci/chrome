@@ -1,0 +1,14 @@
+services:
+  app:
+    image: chrome
+    networks:
+      - traefik
+    container_name: chrome
+    shm_size: 2g
+    security_opt:
+      - seccomp:unconfined
+
+networks:
+  traefik:
+    external: true
+    name: traefik

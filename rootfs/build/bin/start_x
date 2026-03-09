@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# start dbus session
+eval "$(dbus-launch --sh-syntax)"
+export DBUS_SESSION_BUS_ADDRESS
+export DBUS_SESSION_BUS_PID
+
+# allow chrome user to connect to the current X display
+xhost +SI:localuser:chrome >/dev/null 2>&1 || true
+
+# cleanup stale supervisor runtime artifacts
+rm -f /tmp/supervisord_x.pid
+
+# start process supervisor in foreground
+exec /build/bin/supervisord -c /build/config/supervisord_x.conf

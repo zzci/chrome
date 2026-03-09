@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# init kasmvnc config on first run
+if [ ! -f ~/.vnc/kasmvnc.yaml ]; then
+    mkdir -p ~/.vnc
+    cp /build/config/kasmvnc.yaml ~/.vnc/kasmvnc.yaml
+    echo -e "chrome\nchrome\n" | kasmvncpasswd -u chrome -w
+    # skip desktop environment selection prompt
+    touch ~/.vnc/.de-was-selected
+fi
+
+# clean up stale locks
+killall Xvnc 2>/dev/null
+vncserver -kill :1 -clean 2>/dev/null
+rm -rf /tmp/.X1-lock /tmp/.X11-unix/X1
+
+exec vncserver :1 -disableBasicAuth -SecurityTypes None -fg -xstartup /build/bin/start_x
