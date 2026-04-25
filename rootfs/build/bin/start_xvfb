@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Lightweight headless X server. Use as an alternative to the vnc service
+# when you only need chrome + cdp (no web desktop).
+# Switch with: -e ZSRV_DESKTOP=xvfb
+
+set -e
+
+/build/bin/init_user
+
+rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true
+
+# -ac disables host-based access control so the zzci user can connect
+# without an explicit xhost grant (no display is shown to anyone).
+exec Xvfb :1 -screen 0 1920x1080x24 -nolisten tcp -ac

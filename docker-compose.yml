@@ -7,6 +7,22 @@ services:
     shm_size: 2g
     security_opt:
       - seccomp:unconfined
+    # Optional: persist the runtime user's home (chrome profile, extensions,
+    # history, dotfiles). UID/GID auto-adjusted at startup to match host owner.
+    # volumes:
+    #   - ./home:/home/zzci
+    # Override UID/GID explicitly (skip auto-detection):
+    # environment:
+    #   - PUID=1000
+    #   - PGID=1000
+    # Optional: pass through host GPU for VAAPI hardware video encoding
+    # (KasmVNC encoder side; Chrome itself still runs with --disable-gpu).
+    # Requires Intel/AMD GPU on host with /dev/dri/renderD128 present.
+    # devices:
+    #   - /dev/dri:/dev/dri
+    # group_add:
+    #   - video
+    #   - render
 
 networks:
   traefik:

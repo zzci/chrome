@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# One-shot root initialization for the runtime user and home directory.
+# Reconciles UID/GID with the host so bind-mounted volumes work without
+# any extra configuration on the client side.
+# App-agnostic: only manages the user and its home; apps are expected
+# to create their own data dirs (e.g. chrome --user-data-dir).
+
+set -e
+
+RUN_USER="zzci"
+RUN_HOME="/home/zzci"
+
+if ! id "$RUN_USER" >/dev/null 2>&1; then
+    /build/bin/create_user "$RUN_USER" "$RUN_USER"
+fi
+
+# Probe order: PUID/PGID env > owner of RUN_HOME (when non-root) > default.
+target_uid="${PUID:-}"
+target_gid="${PGID:-}"
+if [ -z "$target_uid" ] || [ -z "$target_gid" ]; then
+    probe_uid="$(stat -c '%u' "$RUN_HOME" 2>/dev/null || echo "")"
+    if [ -n "$probe_uid" ] && [ "$probe_uid" != "0" ]; then
+        : "${target_uid:=$probe_uid}"
+        : "${target_gid:=$(stat -c '%g' "$RUN_HOME")}"
+    fi
+fi
+
+current_uid="$(id -u "$RUN_USER")"
+current_gid="$(id -g "$RUN_USER")"
+if [ -n "$target_uid" ] && [ "$target_uid" != "$current_uid" ]; then
+    usermod -o -u "$target_uid" "$RUN_USER"
+fi
+if [ -n "$target_gid" ] && [ "$target_gid" != "$current_gid" ]; then
+    groupmod -o -g "$target_gid" "$RUN_USER"
+fi
+
+mkdir -p "$RUN_HOME"
+chown -R "$RUN_USER:$RUN_USER" "$RUN_HOME"

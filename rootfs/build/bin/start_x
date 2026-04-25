@@ -1,15 +1,21 @@
 #!/bin/sh
 
-# start dbus session
+# X session entrypoint, invoked by KasmVNC vncserver as xstartup.
+# Brings up dbus + tint2 panel + openbox WM. Sibling services
+# (chrome/...) attach to this display independently.
+
 eval "$(dbus-launch --sh-syntax)"
-export DBUS_SESSION_BUS_ADDRESS
-export DBUS_SESSION_BUS_PID
+export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
 
-# allow chrome user to connect to the current X display
-xhost +SI:localuser:chrome >/dev/null 2>&1 || true
+# Persist DBus address for other services to source
+echo "$DBUS_SESSION_BUS_ADDRESS" > /tmp/.dbus-session-bus
+chmod 0644 /tmp/.dbus-session-bus
 
-# cleanup stale supervisor runtime artifacts
-rm -f /tmp/supervisord_x.pid
+# Allow the runtime user to use this display
+xhost +SI:localuser:zzci >/dev/null 2>&1 || true
 
-# start process supervisor in foreground
-exec /build/bin/supervisord -c /build/config/supervisord_x.conf
+# Panel in background; if it dies the session keeps going (restart vnc service to recover)
+tint2 -c /build/config/tint2rc &
+
+# WM in foreground; openbox exiting tears down the session and supervisord restarts vnc.
+exec openbox

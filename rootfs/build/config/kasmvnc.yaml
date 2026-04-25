@@ -12,7 +12,22 @@ network:
   ssl:
     require_ssl: false
 
+user_session:
+  idle_timeout: 1800
+
+encoding:
+  max_frame_rate: 30
+  rect_encoding_mode:
+    min_quality: 7
+    max_quality: 9
+    consider_lossless_quality: 9
+  video_encoding_mode:
+    webp_encoding_time: 50
+
 logging:
   log_writer_name: all
   log_dest: logfile
   level: 30
+
+command_line:
+  prompt: false

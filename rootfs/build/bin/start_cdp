@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# CDP service: chrome (kept alive for external CDP clients).
+# CDP_MODE=remote (default) — also expose chrome devtools on 9222 via socat.
+# CDP_MODE=local            — chrome only; CDP reachable from inside the
+#                             container at 127.0.0.1:19222 only.
+
+trap 'exit 0' TERM INT
+
+if [ "${CDP_MODE:-remote}" != "local" ]; then
+    socat TCP-LISTEN:9222,fork,bind=0.0.0.0,reuseaddr TCP:127.0.0.1:19222 &
+    SOCAT_PID=$!
+    trap "kill $SOCAT_PID 2>/dev/null; exit 0" TERM INT EXIT
+fi
+
+while :; do
+    /build/bin/start_chrome
+    rc=$?
+    echo "[chrome] exited (rc=$rc), restarting in 1s for CDP" >&2
+    sleep 1
+done

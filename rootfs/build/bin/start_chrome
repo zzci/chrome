@@ -1,22 +1,24 @@
 #!/bin/sh
 
-set -e
+# Single-shot chrome launch. Keep-alive (for CDP) is handled by start_cdp.
 
-CHROME_USER="chrome"
-CHROME_HOME="/home/chrome"
-CHROME_DATA_DIR="$CHROME_HOME/chrome-data"
+RUN_USER="zzci"
+RUN_HOME="/home/zzci"
 
-if ! id "$CHROME_USER" >/dev/null 2>&1; then
-    /build/bin/create_user "$CHROME_USER" "$CHROME_USER"
-fi
+/build/bin/wait_for_x
 
-mkdir -p "$CHROME_DATA_DIR" "$CHROME_HOME/.config" "$CHROME_HOME/.cache"
-chown -R "$CHROME_USER:$CHROME_USER" "$CHROME_DATA_DIR" "$CHROME_HOME/.config" "$CHROME_HOME/.cache"
+DBUS_ADDR="$(cat /tmp/.dbus-session-bus 2>/dev/null || true)"
 
-exec su -s /bin/sh "$CHROME_USER" -c "HOME='$CHROME_HOME' USER='$CHROME_USER' LOGNAME='$CHROME_USER' exec google-chrome-stable \
+rm -f "$RUN_HOME/.config/google-chrome/Singleton"* 2>/dev/null || true
+
+exec su -s /bin/sh "$RUN_USER" -c "DISPLAY=:1 \
+    DBUS_SESSION_BUS_ADDRESS='$DBUS_ADDR' \
+    HOME='$RUN_HOME' USER='$RUN_USER' LOGNAME='$RUN_USER' \
+    exec google-chrome-stable \
     --no-first-run \
     --start-maximized \
-    --user-data-dir='$CHROME_DATA_DIR' \
+    --window-size=1920,1080 \
+    --window-position=0,0 \
     --remote-debugging-port=19222 \
     --disable-gpu \
     --disable-software-rasterizer \

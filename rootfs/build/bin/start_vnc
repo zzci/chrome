@@ -1,10 +1,13 @@
 #!/bin/sh
 
+# initialize runtime user and home dir as root, before any user-owned file is touched
+/build/bin/init_user
+
 # init kasmvnc config on first run
 if [ ! -f ~/.vnc/kasmvnc.yaml ]; then
     mkdir -p ~/.vnc
     cp /build/config/kasmvnc.yaml ~/.vnc/kasmvnc.yaml
-    echo -e "chrome\nchrome\n" | kasmvncpasswd -u chrome -w
+    echo -e "zzcipass\nzzcipass\n" | kasmvncpasswd -u zzci -w
     # skip desktop environment selection prompt
     touch ~/.vnc/.de-was-selected
 fi

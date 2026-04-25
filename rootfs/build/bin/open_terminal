@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Native X terminal as the runtime user. No chrome dependency.
+
+exec xterm \
+    -fa "DejaVu Sans Mono" \
+    -fs 11 \
+    -bg "#1e1e1e" \
+    -fg "#d4d4d4" \
+    -title "Terminal" \
+    -geometry 110x32 \
+    -e su - zzci
