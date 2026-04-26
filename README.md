@@ -9,7 +9,9 @@ A minimal Chrome-in-Docker image with KasmVNC for browser-based desktop access a
 - **KasmVNC** on port `80` — X server + web client in one
 - **Chrome** + tint2 panel + openbox WM on the X session
 - **Chrome DevTools Protocol** on port `9222` (forwarded from internal `19222`)
-- **xterm** terminal launcher in the panel for in-desktop shell access
+- **fcitx5 + rime** for CJK input (pinyin, default toggle `Ctrl+\`)
+- **Color emoji** via `fonts-noto-color-emoji`
+- **xterm** terminal launcher and **Chrome** launcher in the panel
 
 Composition is driven by [zzci/ubase](https://hub.docker.com/r/zzci/ubase)'s `ZSRV_<KEY>=<conf>` mechanism — every service is independently toggleable.
 
@@ -49,6 +51,14 @@ Switch CDP behavior via `ZSRV_CDP` and `CDP_MODE`:
 | `CDP_MODE=remote` (default) | `socat` exposes chrome's 19222 on `0.0.0.0:9222` |
 | `CDP_MODE=local` | no port forward; CDP only reachable inside the container at `127.0.0.1:19222` |
 
+Other runtime knobs:
+
+| ENV | Default | Effect |
+|-----|---------|--------|
+| `RUN_USER` | `zzci` | runtime user — created lazily on first boot if missing |
+| `PUID` / `PGID` | auto | override RUN_USER's uid/gid (also auto-detected from the host owner of `/home/$RUN_USER`) |
+| `ROOT_BG` | `#cce8cf` | desktop background; any color name or `#hex` `xsetroot` accepts |
+
 ### Examples
 
 ```bash
@@ -83,27 +93,54 @@ The bundled `docker-compose.yml` sets the required `shm_size: 2g` and `seccomp:u
 ## Layout
 
 ```
-rootfs/.init/services/         service catalog (default-disabled, enabled via ZSRV)
+rootfs/build/services/         service catalog (default-disabled, enabled via ZSRV)
   vnc.conf                     KasmVNC + dbus + tint2 + openbox
   xvfb.conf                    Xvfb (alternative X provider)
   cdp.conf                     chrome (kept alive) + socat 9222->19222
 
 rootfs/build/bin/
-  init_user                    one-shot UID/GID reconcile + home chown (root)
-  start_vnc                    KasmVNC bootstrap, runs init_user first
-  start_x                      vncserver xstartup: dbus + tint2 + openbox
-  start_xvfb                   Xvfb :1
+  init_user                    one-shot user/uid/gid + home reconcile (root)
+  start_vnc                    KasmVNC bootstrap → drops to RUN_USER
+  start_x                      xstartup: dbus + fcitx5 + tint2 + openbox
+  start_xvfb                   Xvfb :1 (headless mode)
   start_cdp                    chrome keep-alive loop + socat
-  start_chrome                 single-shot chrome launch (used by start_cdp)
-  open_terminal                opens xterm as zzci (panel terminal launcher)
+  start_chrome                 CDP-flavored chrome launch (used by start_cdp)
+  launch_chrome                interactive chrome (panel launcher target)
+  open_terminal                xterm panel launcher
   wait_for_x                   blocks until DISPLAY :1 is ready
 
 rootfs/build/config/
-  kasmvnc.yaml                 KasmVNC settings (encoding tuning, idle timeout, ...)
-  tint2rc                      panel layout (terminal launcher + taskbar + clock)
+  kasmvnc.yaml                 KasmVNC server settings
+  tint2rc                      panel layout (launchers + taskbar + clock)
+  fcitx5-config                fcitx5 hotkeys (Ctrl+\ trigger)
+  fcitx5-profile               default IM group (keyboard-us + rime)
+  fcitx5-rime.conf             force-load rime addon (override OnDemand=True)
+  rime-default.custom.yaml     rime schema list (pinyin_simp only)
+
+rootfs/build/share/applications/
+  terminal.desktop             tint2 launcher entry — terminal
+  chrome.desktop               tint2 launcher entry — chrome (→ launch_chrome)
 
 rootfs/etc/fonts/local.conf    LCD subpixel rendering for sharper text
 ```
+
+## Input method
+
+`fcitx5 + rime` ships preconfigured with the simplified-pinyin schema.
+
+| Key | Action |
+|-----|--------|
+| `Ctrl+\` | toggle between `keyboard-us` (passthrough) and `rime` (pinyin) |
+| `Shift+Space` | alternate trigger (in case the host eats `Ctrl+\`) |
+
+To rebind, edit `~/.config/fcitx5/config` inside the container, e.g.:
+
+```ini
+[Hotkey/TriggerKeys]
+0=Control+space
+```
+
+To pick a different rime schema, edit `~/.local/share/fcitx5/rime/default.custom.yaml`. Only `pinyin_simp` data is bundled; install other `rime-data-*` packages first if you want bopomofo, cangjie, etc.
 
 ## Service control at runtime
 
@@ -147,6 +184,6 @@ agent-browser --cdp "ws://your-host:9222/devtools/browser" snapshot
 ## Notes
 
 - Chrome's CDP listens internally on `19222` and is forwarded to external `9222` by `socat` (only in `CDP_MODE=remote`).
-- The browser profile lives at `/home/zzci/.config/google-chrome/` (chrome's default location). Mount `/home/zzci` to persist it.
-- `chrome` runs as the `zzci` user (UID 1000). Inside the panel terminal you can `sudo` without a password.
+- The CDP service and the panel-launched chrome share `--user-data-dir=$HOME/.config/chrome`, so logging in once works across both. Mount `/home/$RUN_USER` to persist it.
+- The whole X session (vncserver, openbox, tint2, fcitx5, chrome) runs as `RUN_USER` — no root in the desktop. Inside the panel terminal you can `sudo` without a password.
 - Singleton lock files left over from a previous container are automatically cleaned at chrome start.

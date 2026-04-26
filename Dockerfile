@@ -19,8 +19,14 @@ RUN wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-
     openbox \
     tint2 \
     xterm \
+    # input method (CJK) — rime engine + simplified pinyin schema; no Qt deps
+    fcitx5 \
+    fcitx5-rime \
+    rime-data-pinyin-simp \
+    fcitx5-frontend-gtk3 \
     # fonts + LCD-aware rendering
     fonts-noto-cjk \
+    fonts-noto-color-emoji \
     fonts-noto-core \
     fonts-noto-ui-core \
     fonts-liberation \
@@ -35,21 +41,23 @@ RUN wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-
     # install kasmvnc
     wget -qO /tmp/kasmvnc.deb https://github.com/kasmtech/KasmVNC/releases/download/v1.4.0/kasmvncserver_jammy_1.4.0_amd64.deb && \
     apt-get install -y /tmp/kasmvnc.deb && rm -f /tmp/kasmvnc.deb && \
-    # create runtime user (create_user also writes NOPASSWD sudoers)
-    /build/bin/create_user zzci && \
-    # do clean
+    # do clean (runtime user is created lazily by init_user on first boot,
+    # so the image is user-name agnostic — set RUN_USER=foo to override)
     apt-get autoclean -y && apt-get autoremove -y && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
 
 EXPOSE 80 9222
 
-# Service composition via ubase ZSRV_<KEY>=<conf-filename> env vars.
-# X provider: ZSRV_DESKTOP=vnc (KasmVNC + tint2 panel) | xvfb (headless)
-# Apps:       ZSRV_CDP=cdp (chrome + 9222 forward)
+# Runtime user (created lazily by init_user; override with -e RUN_USER=foo)
+# Service composition via ubase ZSRV_<KEY>=<conf-filename> env vars:
+#   X provider: ZSRV_DESKTOP=vnc (KasmVNC + tint2 panel) | xvfb (headless)
+#   Apps:       ZSRV_CDP=cdp (chrome + 9222 forward)
 # Disable any at runtime with -e ZSRV_<KEY>=0
-ENV ZSRV_DESKTOP=vnc ZSRV_CDP=cdp
+ENV RUN_USER=zzci \
+    ZSRV_DESKTOP=vnc \
+    ZSRV_CDP=cdp
 
 ADD rootfs /
 
-RUN chmod -R 0755 /build && chmod -R 0644 /build/config
+RUN chmod -R 0755 /build && find /build/config -type f -exec chmod 0644 {} +
 
 CMD ["/start.sh"]

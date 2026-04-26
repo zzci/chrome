@@ -6,10 +6,12 @@
 
 set -e
 
-/build/bin/init_user
+: "${RUN_USER:=zzci}"
 
+# Privileged setup as root: reconcile uid/gid + clear stale X locks
+/build/bin/init_user
 rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true
 
-# -ac disables host-based access control so the zzci user can connect
-# without an explicit xhost grant (no display is shown to anyone).
-exec Xvfb :1 -screen 0 1920x1080x24 -nolisten tcp -ac
+# Drop to $RUN_USER so Xvfb runs as the same user that chrome and fcitx5
+# use, matching the vnc service's user model.
+exec runuser -u "$RUN_USER" -- Xvfb :1 -screen 0 1920x1080x24 -nolisten tcp -ac

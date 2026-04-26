@@ -1,20 +1,43 @@
 #!/bin/sh
 
-# initialize runtime user and home dir as root, before any user-owned file is touched
+# KasmVNC bootstrap. Privileged setup runs as root, then the X session
+# (vncserver, openbox, tint2, fcitx5, chrome) is launched as $RUN_USER
+# so all user processes share one DBus session bus and one home dir.
+
+set -e
+
+: "${RUN_USER:=zzci}"
+
+# As root: reconcile uid/gid + own home, clear stale X locks
 /build/bin/init_user
+killall Xvnc 2>/dev/null || true
+rm -rf /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true
 
-# init kasmvnc config on first run
-if [ ! -f ~/.vnc/kasmvnc.yaml ]; then
-    mkdir -p ~/.vnc
-    cp /build/config/kasmvnc.yaml ~/.vnc/kasmvnc.yaml
-    echo -e "zzcipass\nzzcipass\n" | kasmvncpasswd -u zzci -w
-    # skip desktop environment selection prompt
-    touch ~/.vnc/.de-was-selected
-fi
+exec runuser -u "$RUN_USER" -- /bin/sh -c '
+    set -e
 
-# clean up stale locks
-killall Xvnc 2>/dev/null
-vncserver -kill :1 -clean 2>/dev/null
-rm -rf /tmp/.X1-lock /tmp/.X11-unix/X1
+    # First-run kasmvnc config — lives in the (mounted) home dir.
+    # Auth is disabled at the server (-disableBasicAuth -SecurityTypes None);
+    # the password file is just a placeholder kasmvncserver insists on.
+    if [ ! -f "$HOME/.vnc/kasmvnc.yaml" ]; then
+        mkdir -p "$HOME/.vnc"
+        cp /build/config/kasmvnc.yaml "$HOME/.vnc/kasmvnc.yaml"
+        printf "kasmpass\nkasmpass\n" | kasmvncpasswd -u "$USER" -w
+        touch "$HOME/.vnc/.de-was-selected"
+    fi
 
-exec vncserver :1 -disableBasicAuth -SecurityTypes None -fg -xstartup /build/bin/start_x
+    # First-run fcitx5 config — rime+pinyin_simp, Ctrl+\ toggle.
+    # rime addon ships with OnDemand=True so it would lazy-load only on
+    # explicit activation; fcitx5-rime.conf overrides that so the chrome
+    # GTK module finds rime ready at first connection.
+    mkdir -p "$HOME/.config/fcitx5/conf"
+    [ -f "$HOME/.config/fcitx5/profile" ]    || cp /build/config/fcitx5-profile   "$HOME/.config/fcitx5/profile"
+    [ -f "$HOME/.config/fcitx5/config" ]     || cp /build/config/fcitx5-config    "$HOME/.config/fcitx5/config"
+    [ -f "$HOME/.config/fcitx5/conf/rime.conf" ] || cp /build/config/fcitx5-rime.conf "$HOME/.config/fcitx5/conf/rime.conf"
+    mkdir -p "$HOME/.local/share/fcitx5/rime"
+    [ -f "$HOME/.local/share/fcitx5/rime/default.custom.yaml" ] || \
+        cp /build/config/rime-default.custom.yaml "$HOME/.local/share/fcitx5/rime/default.custom.yaml"
+
+    vncserver -kill :1 -clean 2>/dev/null || true
+    exec vncserver :1 -disableBasicAuth -SecurityTypes None -fg -xstartup /build/bin/start_x
+'

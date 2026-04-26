@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Google Chrome
+Comment=Launch Chrome browser
+Exec=/build/bin/launch_chrome
+Icon=google-chrome
+Type=Application
+Terminal=false
+Categories=Network;WebBrowser;
+StartupWMClass=Google-chrome

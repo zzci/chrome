@@ -8,5 +8,4 @@ exec xterm \
     -bg "#1e1e1e" \
     -fg "#d4d4d4" \
     -title "Terminal" \
-    -geometry 110x32 \
-    -e su - zzci
+    -geometry 110x32

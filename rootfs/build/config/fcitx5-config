@@ -1,0 +1,10 @@
+[Hotkey]
+# Toggle between keyboard-us and pinyin via Ctrl+\
+# (Ctrl+Space conflicts with macOS input source switcher)
+EnumerateWithTriggerKeys=True
+
+[Hotkey/TriggerKeys]
+0=Control+backslash
+
+[Hotkey/AltTriggerKeys]
+0=Shift+space

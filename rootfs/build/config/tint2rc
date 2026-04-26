@@ -1,4 +1,4 @@
-# tint2 minimal panel: launcher (terminal) + taskbar (chrome) + clock
+# tint2 minimal panel: launchers + taskbar + clock
 
 # Panel
 panel_items = LTC
@@ -29,6 +29,7 @@ launcher_icon_size = 22
 launcher_icon_theme_override = 0
 startup_notifications = 0
 launcher_item_app = /build/share/applications/terminal.desktop
+launcher_item_app = /build/share/applications/chrome.desktop
 
 # Taskbar
 taskbar_mode = single_desktop

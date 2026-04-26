@@ -1,0 +1,16 @@
+[Groups/0]
+# Default group with US keyboard + rime (pinyin schema)
+Default Layout=us
+DefaultIM=rime
+Name=Default
+
+[Groups/0/Items/0]
+Layout=
+Name=keyboard-us
+
+[Groups/0/Items/1]
+Layout=
+Name=rime
+
+[GroupOrder]
+0=Default

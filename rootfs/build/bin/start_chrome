@@ -2,23 +2,31 @@
 
 # Single-shot chrome launch. Keep-alive (for CDP) is handled by start_cdp.
 
-RUN_USER="zzci"
-RUN_HOME="/home/zzci"
+: "${RUN_USER:=zzci}"
+: "${RUN_HOME:=/home/$RUN_USER}"
 
-/build/bin/wait_for_x
+# Wait briefly for the X session to publish the DBus address (only present
+# in vnc mode; xvfb mode has no DBus and the loop times out harmlessly).
+DBUS_ADDR=""
+for _ in $(seq 1 20); do
+    if [ -s /tmp/.dbus-session-bus ]; then
+        DBUS_ADDR=$(cat /tmp/.dbus-session-bus)
+        break
+    fi
+    sleep 0.3
+done
 
-DBUS_ADDR="$(cat /tmp/.dbus-session-bus 2>/dev/null || true)"
+rm -f "$RUN_HOME/.config/chrome/Singleton"* 2>/dev/null || true
 
-rm -f "$RUN_HOME/.config/google-chrome/Singleton"* 2>/dev/null || true
-
-exec su -s /bin/sh "$RUN_USER" -c "DISPLAY=:1 \
-    DBUS_SESSION_BUS_ADDRESS='$DBUS_ADDR' \
-    HOME='$RUN_HOME' USER='$RUN_USER' LOGNAME='$RUN_USER' \
+exec su -s /bin/sh "$RUN_USER" -c "
+    export DISPLAY=:1 \
+        DBUS_SESSION_BUS_ADDRESS='$DBUS_ADDR' \
+        HOME='$RUN_HOME' USER='$RUN_USER' LOGNAME='$RUN_USER' \
+        GTK_IM_MODULE=fcitx QT_IM_MODULE=fcitx XMODIFIERS=@im=fcitx
+    /build/bin/wait_for_x || exit 1
     exec google-chrome-stable \
     --no-first-run \
-    --start-maximized \
-    --window-size=1920,1080 \
-    --window-position=0,0 \
+    --user-data-dir=\$HOME/.config/chrome \
     --remote-debugging-port=19222 \
     --disable-gpu \
     --disable-software-rasterizer \

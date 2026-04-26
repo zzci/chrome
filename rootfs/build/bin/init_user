@@ -8,11 +8,17 @@
 
 set -e
 
-RUN_USER="zzci"
-RUN_HOME="/home/zzci"
+: "${RUN_USER:=zzci}"
+: "${RUN_HOME:=/home/$RUN_USER}"
 
 if ! id "$RUN_USER" >/dev/null 2>&1; then
     /build/bin/create_user "$RUN_USER" "$RUN_USER"
+fi
+
+# Allow the runtime user to read the kasmvnc snakeoil key (group-readable
+# under /etc/ssl/private). Idempotent; ssl-cert group ships with openssl.
+if getent group ssl-cert >/dev/null 2>&1; then
+    usermod -aG ssl-cert "$RUN_USER" 2>/dev/null || true
 fi
 
 # Probe order: PUID/PGID env > owner of RUN_HOME (when non-root) > default.
