@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# tiny status indicator for the tint2 panel:
+#   "中" — fcitx5 active (e.g. rime pinyin engaged)
+#   "A"  — fcitx5 inactive (passthrough / keyboard layout)
+#   "·"  — fcitx5 not reachable
+
+state="$(fcitx5-remote 2>/dev/null)"
+case "$state" in
+    2) echo "中" ;;
+    1|0) echo "A" ;;
+    *) echo "·" ;;
+esac

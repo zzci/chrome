@@ -2,17 +2,14 @@
 
 # Interactive chrome launcher used by the tint2 panel button.
 # tint2 runs as the X session user so we can exec chrome directly.
-# Stale singleton locks are cleared so a click after a crash still produces
-# a window.
+#
+# Do NOT remove SingletonLock here: when chrome is already running on this
+# user-data-dir, the lock is what makes a second invocation forward its
+# args (URL etc.) to the existing instance instead of spawning a competing
+# one. Chrome itself reaps the lock if its owner PID is dead.
 
-DATA_DIR="$HOME/.config/chrome"
-rm -f "$DATA_DIR/Singleton"* 2>/dev/null || true
-
-# Same user-data-dir as the CDP service, so when CDP is on the click opens
-# a new window in the existing chrome (profile shared) instead of spawning
-# a second instance. When CDP is off, this is just a fresh chrome.
 exec /usr/bin/google-chrome-stable \
-    --user-data-dir="$DATA_DIR" \
+    --user-data-dir="$HOME/.config/chrome" \
     --no-first-run \
     --no-default-browser-check \
     "$@"

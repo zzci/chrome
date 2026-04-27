@@ -1,7 +1,7 @@
-# tint2 minimal panel: launchers + taskbar + clock
+# tint2 minimal panel: launchers + taskbar + IME indicator + clock
 
 # Panel
-panel_items = LTC
+panel_items = LTEC
 panel_size = 100% 32
 panel_margin = 0 0
 panel_padding = 4 0 4
@@ -46,11 +46,21 @@ task_active_font_color = #ffffff 100
 task_active_background_id = 2
 urgent_nb_of_blink = 0
 
+# Executor — fcitx5 IME indicator. Click toggles activate/inactive.
+execp = new
+execp_command = /build/bin/fcitx5_indicator
+execp_interval = 1
+execp_continuous = 0
+execp_has_icon = 0
+execp_font_color = #ffffff 95
+execp_padding = 8 0
+execp_background_id = 0
+execp_lclick_command = fcitx5-remote -t
+
 # Clock
-time1_format = %H:%M
-time2_format = %m-%d
-time1_font_color = #ffffff 90
-time2_font_color = #ffffff 70
+time1_format = %Y-%m-%d %H:%M
+time1_font = sans 11
+clock_font_color = #ffffff 95
 clock_padding = 6 0
 clock_background_id = 0
 

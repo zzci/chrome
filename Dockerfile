@@ -41,6 +41,8 @@ RUN wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-
     # install kasmvnc
     wget -qO /tmp/kasmvnc.deb https://github.com/kasmtech/KasmVNC/releases/download/v1.4.0/kasmvncserver_jammy_1.4.0_amd64.deb && \
     apt-get install -y /tmp/kasmvnc.deb && rm -f /tmp/kasmvnc.deb && \
+    # collapse openbox's default 4 virtual desktops to 1 (single-screen kiosk)
+    sed -i 's|<number>4</number>|<number>1</number>|' /etc/xdg/openbox/rc.xml && \
     # do clean (runtime user is created lazily by init_user on first boot,
     # so the image is user-name agnostic — set RUN_USER=foo to override)
     apt-get autoclean -y && apt-get autoremove -y && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
