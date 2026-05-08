@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # Native X terminal as the runtime user. No chrome dependency.
+# Clipboard bindings live in /build/config/Xresources, loaded by start_x.
 
 exec xterm \
     -fa "DejaVu Sans Mono" \

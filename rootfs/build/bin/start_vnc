@@ -25,6 +25,11 @@ exec runuser -u "$RUN_USER" -- /bin/sh -c '
         printf "kasmpass\nkasmpass\n" | kasmvncpasswd -u "$USER" -w
         touch "$HOME/.vnc/.de-was-selected"
     fi
+    # Backwards-compat: append the data_loss_prevention clipboard block
+    # to legacy yaml files that predate it.
+    if ! grep -q "^data_loss_prevention:" "$HOME/.vnc/kasmvnc.yaml"; then
+        awk "/^data_loss_prevention:/{f=1} f" /build/config/kasmvnc.yaml >> "$HOME/.vnc/kasmvnc.yaml"
+    fi
 
     # First-run fcitx5 config — rime+pinyin_simp, Ctrl+\ toggle.
     # rime addon ships with OnDemand=True so it would lazy-load only on
@@ -39,5 +44,7 @@ exec runuser -u "$RUN_USER" -- /bin/sh -c '
         cp /build/config/rime-default.custom.yaml "$HOME/.local/share/fcitx5/rime/default.custom.yaml"
 
     vncserver -kill :1 -clean 2>/dev/null || true
-    exec vncserver :1 -disableBasicAuth -SecurityTypes None -fg -xstartup /build/bin/start_x
+    exec vncserver :1 -disableBasicAuth -SecurityTypes None -fg \
+        -SendCutText 1 -AcceptCutText 1 -SendPrimary 1 \
+        -xstartup /build/bin/start_x
 '

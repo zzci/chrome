@@ -15,6 +15,9 @@ export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
 # -e ROOT_BG="#hex" or any xsetroot-accepted color name.
 xsetroot -solid "${ROOT_BG:-#cce8cf}" 2>/dev/null || true
 
+# X resources (xterm clipboard bindings, etc.)
+[ -f /build/config/Xresources ] && xrdb -merge /build/config/Xresources 2>/dev/null || true
+
 # Input method daemon — must be ready before chrome starts, otherwise
 # chrome's GTK loads im-fcitx5.so, fails to bind, and never reconnects.
 fcitx5 -d --replace >/dev/null 2>&1 &

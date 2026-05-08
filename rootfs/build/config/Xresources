@@ -1,0 +1,9 @@
+! xterm clipboard — make Ctrl+Shift+C / Ctrl+Shift+V work and mirror
+! mouse-selected text to CLIPBOARD (KasmVNC bridges CLIPBOARD to the
+! host browser; PRIMARY stays container-local).
+XTerm*selectToClipboard: true
+XTerm*VT100.selectToClipboard: true
+XTerm*VT100.Translations: #override \
+    Ctrl Shift <Key>C: copy-selection(CLIPBOARD) \n\
+    Ctrl Shift <Key>V: insert-selection(CLIPBOARD) \n\
+    Shift <Key>Insert: insert-selection(CLIPBOARD)
