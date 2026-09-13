@@ -21,6 +21,20 @@ if getent group ssl-cert >/dev/null 2>&1; then
     usermod -aG ssl-cert "$RUN_USER" 2>/dev/null || true
 fi
 
+# Grant access to any passed-through GPU device. The host's video/render
+# gids almost never match the container's, so derive them from the device
+# nodes instead of hardcoding a group_add on the client side.
+for dev in /dev/dri/*; do
+    [ -c "$dev" ] || continue
+    dev_gid="$(stat -c '%g' "$dev")"
+    dev_grp="$(getent group "$dev_gid" | cut -d: -f1)"
+    if [ -z "$dev_grp" ]; then
+        dev_grp="dri$dev_gid"
+        groupadd -g "$dev_gid" "$dev_grp" 2>/dev/null || true
+    fi
+    usermod -aG "$dev_grp" "$RUN_USER" 2>/dev/null || true
+done
+
 # Probe order: PUID/PGID env > owner of RUN_HOME (when non-root) > default.
 target_uid="${PUID:-}"
 target_gid="${PGID:-}"

@@ -13,7 +13,7 @@ network:
     require_ssl: false
 
 user_session:
-  idle_timeout: 1800
+  idle_timeout: never
 
 # Two-way clipboard sync between the in-container CLIPBOARD selection
 # and the host browser. Also mirrors PRIMARY (mouse-selection) so xterm

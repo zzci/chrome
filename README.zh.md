@@ -7,11 +7,12 @@
 ## 包含组件
 
 - **KasmVNC** 监听 `80` 端口 —— 集成 X server 与 web 客户端
-- **Chrome** + tint2 任务栏 + openbox 窗口管理器,跑在同一个 X 会话中
+- **Chrome** 与 **Firefox** + tint2 任务栏 + openbox 窗口管理器,跑在同一个 X 会话中
 - **Chrome DevTools Protocol** 监听 `9222` 端口(由内部 `19222` 转发而来)
+- **GPU 加速**:透传 `/dev/dri` 后自动启用,没有则退回软件渲染
 - **fcitx5 + rime** 中文输入(拼音,默认 `Ctrl+\` 切换)
 - **彩色 emoji** 通过 `fonts-noto-color-emoji`
-- **xterm 终端** + **Chrome** 启动器,集成在底部 panel
+- **xterm 终端**、**Chrome**、**Firefox** 启动器,集成在底部 panel
 
 服务编排基于 [zzci/ubase](https://hub.docker.com/r/zzci/ubase) 的 `ZSRV_<KEY>=<conf>` 机制 —— 每个服务都可独立启停。
 
@@ -58,6 +59,8 @@ docker run -d \
 | `RUN_USER` | `zzci` | 运行时用户名,首次启动时若不存在会自动创建 |
 | `PUID` / `PGID` | 自动 | 显式指定 RUN_USER 的 uid/gid(默认根据 `/home/$RUN_USER` 属主自动检测) |
 | `ROOT_BG` | `#cce8cf` | 桌面背景色,任意 `xsetroot` 接受的色值 |
+| `GPU` | `auto` | `auto` 在 `/dev/dri` 存在且可访问时启用硬件加速;`off` 强制软件渲染 |
+| `DRI_NODE` | `/dev/dri/renderD128` | 宿主机多卡时指定使用哪个 render node |
 
 ### 常见组合
 
@@ -84,11 +87,14 @@ docker run -d -e CDP_MODE=local zzci/chrome
 
 ## Docker Compose
 
-自带的 `docker-compose.yml` 已经设好了必需的 `shm_size: 2g` 和 `seccomp:unconfined`。文件里的可选段都加了注释，按需打开：
+自带的 `docker-compose.yml` 已经设好了 `shm_size: 2g`、`seccomp:unconfined` 和 `/dev/dri` 透传。前两项是**必需**的 —— 默认 64MB 的 shm 会让 Chrome 渲染进程卡死，默认 seccomp 配置会让沙箱起不来。
+
+文件里的可选段按需打开：
 
 - `./home:/home/zzci` 挂载持久化用户家目录
 - `PUID` / `PGID` 显式指定（默认会自动检测）
-- `/dev/dri` 透传以启用 VAAPI 硬件视频编码（KasmVNC 编码侧；需要宿主机有 Intel/AMD GPU）
+
+宿主机没有 `/dev/dri` 时，删掉 `devices:` 段或设置 `GPU=off`。
 
 ## 目录结构
 
@@ -105,7 +111,10 @@ rootfs/build/bin/
   start_xvfb                   启动 Xvfb :1(无显示模式)
   start_cdp                    chrome 保活循环 + socat 端口转发
   start_chrome                 CDP 模式 chrome 启动(被 start_cdp 调用)
+  chrome_flags                 chrome 公共参数集(两个启动器共同 source)
   launch_chrome                交互式 chrome(panel 启动器目标)
+  launch_firefox               交互式 firefox(panel 启动器目标)
+  gpu_node                     输出可用的 DRI render node,没有则输出空
   open_terminal                xterm 终端启动器
   wait_for_x                   阻塞等待 :1 display ready
 
@@ -120,6 +129,7 @@ rootfs/build/config/
 rootfs/build/share/applications/
   terminal.desktop             tint2 启动器 — 终端
   chrome.desktop               tint2 启动器 — chrome(→ launch_chrome)
+  firefox.desktop              tint2 启动器 — firefox(→ launch_firefox)
 
 rootfs/etc/fonts/local.conf    LCD 子像素抗锯齿,文字更清晰
 ```

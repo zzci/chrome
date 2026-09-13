@@ -7,11 +7,12 @@ A minimal Chrome-in-Docker image with KasmVNC for browser-based desktop access a
 ## What's inside
 
 - **KasmVNC** on port `80` — X server + web client in one
-- **Chrome** + tint2 panel + openbox WM on the X session
+- **Chrome** and **Firefox** + tint2 panel + openbox WM on the X session
 - **Chrome DevTools Protocol** on port `9222` (forwarded from internal `19222`)
+- **GPU acceleration** when `/dev/dri` is passed through — auto-detected, software fallback otherwise
 - **fcitx5 + rime** for CJK input (pinyin, default toggle `Ctrl+\`)
 - **Color emoji** via `fonts-noto-color-emoji`
-- **xterm** terminal launcher and **Chrome** launcher in the panel
+- **xterm**, **Chrome** and **Firefox** launchers in the panel
 
 Composition is driven by [zzci/ubase](https://hub.docker.com/r/zzci/ubase)'s `ZSRV_<KEY>=<conf>` mechanism — every service is independently toggleable.
 
@@ -58,6 +59,8 @@ Other runtime knobs:
 | `RUN_USER` | `zzci` | runtime user — created lazily on first boot if missing |
 | `PUID` / `PGID` | auto | override RUN_USER's uid/gid (also auto-detected from the host owner of `/home/$RUN_USER`) |
 | `ROOT_BG` | `#cce8cf` | desktop background; any color name or `#hex` `xsetroot` accepts |
+| `GPU` | `auto` | `auto` uses `/dev/dri` when present and accessible; `off` forces software rendering |
+| `DRI_NODE` | `/dev/dri/renderD128` | render node to use when the host has more than one GPU |
 
 ### Examples
 
@@ -84,11 +87,14 @@ docker run -d -e CDP_MODE=local zzci/chrome
 
 ## Docker Compose
 
-The bundled `docker-compose.yml` sets the required `shm_size: 2g` and `seccomp:unconfined`. Uncomment the optional sections in it to enable:
+The bundled `docker-compose.yml` sets `shm_size: 2g`, `seccomp:unconfined` and `/dev/dri` passthrough. The first two are **required** — Chrome's renderers hang on the 64 MB default shm, and the sandbox cannot start under the default seccomp profile.
+
+Uncomment the optional sections to enable:
 
 - volume mount of `./home:/home/zzci` for persistent profile
 - `PUID` / `PGID` env override (auto-detected by default)
-- `/dev/dri` passthrough for VAAPI hardware video encoding (KasmVNC encoder; needs Intel/AMD GPU)
+
+Drop the `devices:` block (or set `GPU=off`) on a host without `/dev/dri`.
 
 ## Layout
 
@@ -105,7 +111,10 @@ rootfs/build/bin/
   start_xvfb                   Xvfb :1 (headless mode)
   start_cdp                    chrome keep-alive loop + socat
   start_chrome                 CDP-flavored chrome launch (used by start_cdp)
+  chrome_flags                 shared chrome flag set (sourced by both launchers)
   launch_chrome                interactive chrome (panel launcher target)
+  launch_firefox               interactive firefox (panel launcher target)
+  gpu_node                     prints the usable DRI render node, or nothing
   open_terminal                xterm panel launcher
   wait_for_x                   blocks until DISPLAY :1 is ready
 
@@ -120,6 +129,7 @@ rootfs/build/config/
 rootfs/build/share/applications/
   terminal.desktop             tint2 launcher entry — terminal
   chrome.desktop               tint2 launcher entry — chrome (→ launch_chrome)
+  firefox.desktop              tint2 launcher entry — firefox (→ launch_firefox)
 
 rootfs/etc/fonts/local.conf    LCD subpixel rendering for sharper text
 ```

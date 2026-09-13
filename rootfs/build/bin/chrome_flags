@@ -1,0 +1,42 @@
+# Shared chrome flag set — sourced, not executed.
+#
+# Both the panel launcher and the CDP service pull their flags from here so
+# the two can never drift apart: the panel launcher used to run chrome bare,
+# which left it on SwiftShader software GL and was the main reason the
+# browser froze when the CDP service was disabled.
+#
+# Source this as the user that will run chrome — GPU detection tests actual
+# access to the DRI node.
+
+# --disable-software-rasterizer is unconditional: it forbids the SwiftShader
+# fallback without ever disabling real hardware GL. Software GL on a 1920x1080
+# virtual display pegs the CPU and is the classic in-container freeze.
+if [ -n "$(/build/bin/gpu_node)" ]; then
+    # A DRI node is reachable. Leave chrome's GPU blocklist alone so it can
+    # still opt out on its own when the node resolves to a driver mesa does
+    # not actually support (too-new chip, llvmpipe fallback) — forcing
+    # acceleration there would put raster back on the CPU.
+    _gpu="--disable-software-rasterizer --enable-features=VaapiVideoDecodeLinuxGL"
+else
+    _gpu="--disable-gpu --disable-software-rasterizer"
+fi
+
+# Note: /dev/shm is sized by the caller (docker --shm-size 2g). Chrome is
+# deliberately NOT given --disable-dev-shm-usage — that would move shared
+# memory onto /tmp, which is plain overlayfs here, turning every renderer
+# transfer into disk I/O.
+CHROME_FLAGS="--user-data-dir=$HOME/.config/chrome \
+--no-first-run \
+--no-default-browser-check \
+--password-store=basic \
+--disable-background-networking \
+--disable-component-update \
+--disable-domain-reliability \
+--disable-sync \
+--disable-translate \
+--disable-default-apps \
+--disable-client-side-phishing-detection \
+--disable-breakpad \
+--metrics-recording-only \
+--mute-audio \
+$_gpu"

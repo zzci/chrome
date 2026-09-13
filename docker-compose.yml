@@ -15,14 +15,12 @@ services:
     # environment:
     #   - PUID=1000
     #   - PGID=1000
-    # Optional: pass through host GPU for VAAPI hardware video encoding
-    # (KasmVNC encoder side; Chrome itself still runs with --disable-gpu).
-    # Requires Intel/AMD GPU on host with /dev/dri/renderD128 present.
-    # devices:
-    #   - /dev/dri:/dev/dri
-    # group_add:
-    #   - video
-    #   - render
+    # Host GPU passthrough: KasmVNC hardware 3D (-hw3d) plus Chrome GPU
+    # rasterization and VA-API video decode. No group_add needed — the
+    # runtime user is joined to the device's own gid at startup.
+    # Comment out (or set GPU=off) on a host without /dev/dri.
+    devices:
+      - /dev/dri:/dev/dri
 
 networks:
   traefik:

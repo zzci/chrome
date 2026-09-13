@@ -18,30 +18,21 @@ done
 
 rm -f "$RUN_HOME/.config/chrome/Singleton"* 2>/dev/null || true
 
-exec su -s /bin/sh "$RUN_USER" -c "
-    export DISPLAY=:1 \
-        DBUS_SESSION_BUS_ADDRESS='$DBUS_ADDR' \
-        HOME='$RUN_HOME' USER='$RUN_USER' LOGNAME='$RUN_USER' \
+exec env DBUS_SESSION_BUS_ADDRESS="$DBUS_ADDR" RUN_HOME="$RUN_HOME" \
+    runuser -u "$RUN_USER" -- /bin/sh -c '
+    export DISPLAY=:1 HOME="$RUN_HOME" \
         GTK_IM_MODULE=fcitx QT_IM_MODULE=fcitx XMODIFIERS=@im=fcitx
+
     /build/bin/wait_for_x || exit 1
-    exec google-chrome-stable \
-    --no-first-run \
-    --user-data-dir=\$HOME/.config/chrome \
-    --remote-debugging-port=19222 \
-    --disable-gpu \
-    --disable-software-rasterizer \
-    --disable-dev-shm-usage \
-    --disable-background-networking \
-    --disable-sync \
-    --disable-translate \
-    --disable-default-apps \
-    --disable-component-update \
-    --disable-domain-reliability \
-    --disable-client-side-phishing-detection \
-    --disable-hang-monitor \
-    --disable-popup-blocking \
-    --disable-prompt-on-repost \
-    --disable-breakpad \
-    --metrics-recording-only \
-    --no-default-browser-check \
-    --mute-audio"
+
+    . /build/bin/chrome_flags
+
+    # CDP-only additions. --disable-hang-monitor suppresses the
+    # "page unresponsive" dialog, which is right for automation and wrong
+    # for the panel launcher, so it lives here and not in chrome_flags.
+    exec google-chrome-stable $CHROME_FLAGS \
+        --remote-debugging-port=19222 \
+        --disable-hang-monitor \
+        --disable-popup-blocking \
+        --disable-prompt-on-repost
+'

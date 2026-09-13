@@ -7,9 +7,11 @@
 # user-data-dir, the lock is what makes a second invocation forward its
 # args (URL etc.) to the existing instance instead of spawning a competing
 # one. Chrome itself reaps the lock if its owner PID is dead.
+#
+# Flags come from the shared set so this matches what the CDP service runs.
+# --disable-hang-monitor is intentionally not part of it: interactive users
+# need the "page unresponsive" dialog to kill a stuck tab.
 
-exec /usr/bin/google-chrome-stable \
-    --user-data-dir="$HOME/.config/chrome" \
-    --no-first-run \
-    --no-default-browser-check \
-    "$@"
+. /build/bin/chrome_flags
+
+exec /usr/bin/google-chrome-stable $CHROME_FLAGS "$@"

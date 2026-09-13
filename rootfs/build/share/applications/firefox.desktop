@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Firefox
+Comment=Launch Firefox browser
+Exec=/build/bin/launch_firefox
+Icon=firefox
+Type=Application
+Terminal=false
+Categories=Network;WebBrowser;
+StartupWMClass=firefox

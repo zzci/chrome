@@ -30,6 +30,11 @@ exec runuser -u "$RUN_USER" -- /bin/sh -c '
     if ! grep -q "^data_loss_prevention:" "$HOME/.vnc/kasmvnc.yaml"; then
         awk "/^data_loss_prevention:/{f=1} f" /build/config/kasmvnc.yaml >> "$HOME/.vnc/kasmvnc.yaml"
     fi
+    # Backwards-compat: legacy yaml files pinned idle_timeout to 1800, which
+    # drops the connection after 30 min without input — indistinguishable
+    # from a frozen browser. Only the old literal is rewritten, so a value
+    # the user chose deliberately is left alone.
+    sed -i "s/^\\( *idle_timeout:\\) *1800 *\$/\\1 never/" "$HOME/.vnc/kasmvnc.yaml"
 
     # First-run fcitx5 config — rime+pinyin_simp, Ctrl+\ toggle.
     # rime addon ships with OnDemand=True so it would lazy-load only on
@@ -43,8 +48,18 @@ exec runuser -u "$RUN_USER" -- /bin/sh -c '
     [ -f "$HOME/.local/share/fcitx5/rime/default.custom.yaml" ] || \
         cp /build/config/rime-default.custom.yaml "$HOME/.local/share/fcitx5/rime/default.custom.yaml"
 
+    # Hardware 3D when a DRI render node was passed through. Given on the
+    # command line rather than written into kasmvnc.yaml so that a persisted
+    # home does not pin a GPU setting the next container may not have.
+    gpu_args=""
+    dri_node=$(/build/bin/gpu_node)
+    if [ -n "$dri_node" ]; then
+        gpu_args="-hw3d -drinode $dri_node"
+    fi
+
     vncserver -kill :1 -clean 2>/dev/null || true
     exec vncserver :1 -disableBasicAuth -SecurityTypes None -fg \
         -SendCutText 1 -AcceptCutText 1 -SendPrimary 1 \
+        $gpu_args \
         -xstartup /build/bin/start_x
 '

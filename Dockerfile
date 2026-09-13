@@ -2,6 +2,13 @@ FROM zzci/ubase
 
 RUN wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add - && \
     echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' > /etc/apt/sources.list.d/google-chrome.list && \
+    # firefox from mozilla's own repo — ubuntu's `firefox` package is a snap
+    # transitional stub that cannot work in a container. Its epoch (1:...)
+    # outranks mozilla's version string, so the pin below is mandatory.
+    install -d -m 0755 /etc/apt/keyrings && \
+    wget -qO /etc/apt/keyrings/packages.mozilla.org.asc https://packages.mozilla.org/apt/repo-signing-key.gpg && \
+    echo 'deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main' > /etc/apt/sources.list.d/mozilla.list && \
+    printf 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000\n' > /etc/apt/preferences.d/mozilla && \
     apt-get -y update && env DEBIAN_FRONTEND="noninteractive" apt-get --no-install-recommends -y install  \
     # GUI BASE
     dbus-x11 \
@@ -36,10 +43,19 @@ RUN wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-
     xauth \
     # for port forwarding
     socat \
+    # GPU passthrough (/dev/dri): DRI drivers for kasmvnc -hw3d + chrome GL,
+    # VA-API drivers for hardware video decode. vainfo is the diagnostic.
+    libgl1-mesa-dri \
+    libegl1 \
+    libgbm1 \
+    mesa-va-drivers \
+    intel-media-va-driver \
+    vainfo \
     # app
-    google-chrome-stable && \
+    google-chrome-stable \
+    firefox && \
     # install kasmvnc
-    wget -qO /tmp/kasmvnc.deb https://github.com/kasmtech/KasmVNC/releases/download/v1.4.0/kasmvncserver_jammy_1.4.0_amd64.deb && \
+    wget -qO /tmp/kasmvnc.deb https://github.com/kasmtech/KasmVNC/releases/download/v1.4.0/kasmvncserver_noble_1.4.0_amd64.deb && \
     apt-get install -y /tmp/kasmvnc.deb && rm -f /tmp/kasmvnc.deb && \
     # collapse openbox's default 4 virtual desktops to 1 (single-screen kiosk)
     sed -i 's|<number>4</number>|<number>1</number>|' /etc/xdg/openbox/rc.xml && \
@@ -54,9 +70,12 @@ EXPOSE 80 9222
 #   X provider: ZSRV_DESKTOP=vnc (KasmVNC + tint2 panel) | xvfb (headless)
 #   Apps:       ZSRV_CDP=cdp (chrome + 9222 forward)
 # Disable any at runtime with -e ZSRV_<KEY>=0
+# GPU=auto uses /dev/dri when it is passed through and accessible; GPU=off
+# forces software rendering.
 ENV RUN_USER=zzci \
     ZSRV_DESKTOP=vnc \
-    ZSRV_CDP=cdp
+    ZSRV_CDP=cdp \
+    GPU=auto
 
 ADD rootfs /
 

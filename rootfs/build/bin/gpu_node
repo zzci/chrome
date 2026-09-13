@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Print the DRI render node to use for hardware acceleration, or nothing
+# when no GPU was passed through (or the node is not accessible to the
+# calling user). Callers treat empty output as "software rendering only".
+#
+# Must be run as the user that will own the accelerated process: the test
+# is an access check, not just an existence check, so a missing render
+# group membership degrades to software instead of failing at runtime.
+#
+# GPU=off forces software rendering even when /dev/dri is present.
+
+[ "${GPU:-auto}" = "off" ] && exit 0
+
+node="${DRI_NODE:-/dev/dri/renderD128}"
+[ -r "$node" ] && [ -w "$node" ] && echo "$node"
+exit 0

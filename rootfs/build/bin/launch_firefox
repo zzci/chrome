@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Interactive firefox launcher used by the tint2 panel button.
+# Profile lives in $HOME/.mozilla, so it persists with the home mount.
+#
+# Firefox picks its own renderer (hardware WebRender when the DRI node is
+# reachable, software WebRender otherwise), so there is nothing to force
+# here — unlike chrome it does not fall back to a CPU-melting GL stack.
+
+exec /usr/bin/firefox "$@"
