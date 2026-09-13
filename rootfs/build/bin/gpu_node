@@ -1,17 +1,31 @@
 #!/bin/sh
 
 # Print the DRI render node to use for hardware acceleration, or nothing
-# when no GPU was passed through (or the node is not accessible to the
-# calling user). Callers treat empty output as "software rendering only".
+# when there is no usable GPU. Callers treat empty output as "software only".
 #
-# Must be run as the user that will own the accelerated process: the test
-# is an access check, not just an existence check, so a missing render
-# group membership degrades to software instead of failing at runtime.
+# Two gates, because a device node that exists is not the same as one that
+# works:
+#   1. the node is there and this user can open it
+#   2. mesa actually binds a hardware driver to it — a chip newer than the
+#      image's mesa silently falls back to llvmpipe, and pushing chrome's
+#      compositor onto llvmpipe is worse than leaving acceleration off
 #
-# GPU=off forces software rendering even when /dev/dri is present.
+# The probe has to run before X exists (start_vnc needs the answer to decide
+# on -hw3d), so it goes through EGL rather than GLX. ~100ms.
+#
+# Must run as the user that will own the accelerated process.
+# GPU=off skips both gates and forces software rendering.
 
 [ "${GPU:-auto}" = "off" ] && exit 0
 
 node="${DRI_NODE:-/dev/dri/renderD128}"
-[ -r "$node" ] && [ -w "$node" ] && echo "$node"
-exit 0
+[ -r "$node" ] && [ -w "$node" ] || exit 0
+
+# eglinfo walks every platform it can reach; the surfaceless one always
+# answers llvmpipe, so this asks whether *any* platform came up on real
+# hardware. No renderer at all (driver failed to load) counts as software.
+eglinfo 2>/dev/null \
+    | sed -n 's/.* profile renderer: *//p' \
+    | grep -qivE 'llvmpipe|softpipe|swrast|software' || exit 0
+
+echo "$node"

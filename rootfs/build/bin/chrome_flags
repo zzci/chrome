@@ -11,11 +11,12 @@
 # --disable-software-rasterizer is unconditional: it forbids the SwiftShader
 # fallback without ever disabling real hardware GL. Software GL on a 1920x1080
 # virtual display pegs the CPU and is the classic in-container freeze.
+#
+# gpu_node only answers when mesa really drives the node, so the else branch
+# covers both "no /dev/dri passed through" and "passed through but unusable".
+# Chrome's own blocklist is left alone either way — it is a second opinion,
+# not the primary gate.
 if [ -n "$(/build/bin/gpu_node)" ]; then
-    # A DRI node is reachable. Leave chrome's GPU blocklist alone so it can
-    # still opt out on its own when the node resolves to a driver mesa does
-    # not actually support (too-new chip, llvmpipe fallback) — forcing
-    # acceleration there would put raster back on the CPU.
     _gpu="--disable-software-rasterizer --enable-features=VaapiVideoDecodeLinuxGL"
 else
     _gpu="--disable-gpu --disable-software-rasterizer"
