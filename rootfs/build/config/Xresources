@@ -7,3 +7,15 @@ XTerm*VT100.Translations: #override \
     Ctrl Shift <Key>C: copy-selection(CLIPBOARD) \n\
     Ctrl Shift <Key>V: insert-selection(CLIPBOARD) \n\
     Shift <Key>Insert: insert-selection(CLIPBOARD)
+
+! Font rendering. /etc/fonts/local.conf already asks for subpixel LCD
+! output, and fontconfig reports it — but on 24.04 pango/cairo and GTK no
+! longer fall back to fontconfig for these, so text renders with plain
+! grayscale antialiasing and loses its edge. On a bare X session there is
+! no XSettings daemon to supply them either, so mirror them as Xft
+! resources, which every toolkit here does read.
+Xft.antialias:  1
+Xft.hinting:    1
+Xft.hintstyle:  hintslight
+Xft.rgba:       rgb
+Xft.lcdfilter:  lcddefault
