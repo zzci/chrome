@@ -15,9 +15,10 @@ services:
     # environment:
     #   - PUID=1000
     #   - PGID=1000
-    # Host GPU passthrough: KasmVNC hardware 3D (-hw3d) plus Chrome GPU
-    # rasterization and VA-API video decode. No group_add needed — the
-    # runtime user is joined to the device's own gid at startup.
+    # Host GPU passthrough: KasmVNC hardware 3D (-hw3d) and VA-API stream
+    # encoding, plus Chrome GPU rasterization and VA-API video decode.
+    # No group_add needed — the runtime user is joined to the device's own
+    # gid at startup.
     # Comment out (or set GPU=off) on a host without /dev/dri.
     devices:
       - /dev/dri:/dev/dri

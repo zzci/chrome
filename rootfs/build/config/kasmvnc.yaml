@@ -36,6 +36,10 @@ encoding:
     consider_lossless_quality: 9
   video_encoding_mode:
     webp_encoding_time: 50
+  # WebCodecs video stream. auto prefers the VA-API/NVENC encoders kasmvnc
+  # detects at startup and falls back to software when there is no GPU.
+  video_streaming_mode:
+    codec: auto
 
 logging:
   log_writer_name: all

@@ -44,18 +44,26 @@ RUN wget -qO - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-
     # for port forwarding
     socat \
     # GPU passthrough (/dev/dri): DRI drivers for kasmvnc -hw3d + chrome GL,
-    # VA-API drivers for hardware video decode. vainfo is the diagnostic.
+    # VA-API drivers for hardware video decode/encode. vainfo is the diagnostic.
     libgl1-mesa-dri \
     libegl1 \
     libgbm1 \
     mesa-va-drivers \
     intel-media-va-driver \
     vainfo \
+    # kasmvnc dlopens ffmpeg for its video streaming encoders (hardware
+    # h264/hevc/av1 via VA-API, software fallback) but does not declare the
+    # dependency; without libavformat the probe reports "unavailable"
+    libavcodec60 \
+    libavutil58 \
+    libavformat60 \
+    libswscale7 \
+    libswresample4 \
     # app
     google-chrome-stable \
     firefox && \
     # install kasmvnc
-    wget -qO /tmp/kasmvnc.deb https://github.com/kasmtech/KasmVNC/releases/download/v1.4.0/kasmvncserver_noble_1.4.0_amd64.deb && \
+    wget -qO /tmp/kasmvnc.deb https://github.com/kasmtech/KasmVNC/releases/download/v1.5.0/kasmvncserver_noble_1.5.0_amd64.deb && \
     apt-get install -y /tmp/kasmvnc.deb && rm -f /tmp/kasmvnc.deb && \
     # collapse openbox's default 4 virtual desktops to 1 (single-screen kiosk)
     sed -i 's|<number>4</number>|<number>1</number>|' /etc/xdg/openbox/rc.xml && \

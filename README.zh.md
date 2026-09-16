@@ -9,7 +9,7 @@
 - **KasmVNC** 监听 `80` 端口 —— 集成 X server 与 web 客户端
 - **Chrome** 与 **Firefox** + tint2 任务栏 + openbox 窗口管理器,跑在同一个 X 会话中
 - **Chrome DevTools Protocol** 监听 `9222` 端口(由内部 `19222` 转发而来)
-- **GPU 加速**:透传 `/dev/dri` 后自动启用,没有则退回软件渲染
+- **GPU 加速**:透传 `/dev/dri` 后自动启用,没有则退回软件渲染:Chrome 渲染 + 桌面画面流的硬件 H.264/HEVC/AV1 编码(KasmVNC 1.5,WebCodecs)
 - **fcitx5 + rime** 中文输入(拼音,默认 `Ctrl+\` 切换)
 - **彩色 emoji** 通过 `fonts-noto-color-emoji`
 - **xterm 终端**、**Chrome**、**Firefox** 启动器,集成在底部 panel

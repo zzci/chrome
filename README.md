@@ -9,7 +9,7 @@ A minimal Chrome-in-Docker image with KasmVNC for browser-based desktop access a
 - **KasmVNC** on port `80` — X server + web client in one
 - **Chrome** and **Firefox** + tint2 panel + openbox WM on the X session
 - **Chrome DevTools Protocol** on port `9222` (forwarded from internal `19222`)
-- **GPU acceleration** when `/dev/dri` is passed through — auto-detected, software fallback otherwise
+- **GPU acceleration** when `/dev/dri` is passed through — auto-detected, software fallback otherwise: Chrome rendering plus hardware H.264/HEVC/AV1 encoding of the desktop stream (KasmVNC 1.5, WebCodecs)
 - **fcitx5 + rime** for CJK input (pinyin, default toggle `Ctrl+\`)
 - **Color emoji** via `fonts-noto-color-emoji`
 - **xterm**, **Chrome** and **Firefox** launchers in the panel
