@@ -3,13 +3,13 @@
 # X session entrypoint, invoked by KasmVNC vncserver as xstartup.
 # vncserver is launched as the runtime user, so this and all spawned procs
 # inherit that uid (no root in the X session).
+#
+# Only the WM lives here. dbus, fcitx5 and the panel run as their own
+# supervisord services (ZSRV_dbus / ZSRV_fcitx5 / ZSRV_panel), so a crash
+# in one of them is restarted instead of leaving the desktop half-broken.
 
-# Input method environment — scoped to the X session so non-GUI processes
-# (supervisord, Xvnc, …) don't carry these unused vars.
-export GTK_IM_MODULE=fcitx QT_IM_MODULE=fcitx XMODIFIERS=@im=fcitx
-
-eval "$(dbus-launch --sh-syntax)"
-export DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
+# DBus address + input method env, so apps opened from openbox inherit them.
+. /build/bin/session_env
 
 # Solid desktop background (X11 root window). Override at runtime with
 # -e ROOT_BG="#hex" or any xsetroot-accepted color name.
@@ -17,25 +17,6 @@ xsetroot -solid "${ROOT_BG:-#cce8cf}" 2>/dev/null || true
 
 # X resources (xterm clipboard bindings, etc.)
 [ -f /build/config/Xresources ] && xrdb -merge /build/config/Xresources 2>/dev/null || true
-
-# Input method daemon — must be ready before chrome starts, otherwise
-# chrome's GTK loads im-fcitx5.so, fails to bind, and never reconnects.
-fcitx5 -d --replace >/dev/null 2>&1 &
-for _ in $(seq 1 20); do
-    dbus-send --session --print-reply --dest=org.freedesktop.DBus \
-        / org.freedesktop.DBus.NameHasOwner string:org.fcitx.Fcitx5 \
-        2>/dev/null | grep -q true && break
-    sleep 0.3
-done
-
-# Publish DBus address only after fcitx5 is registered, so sibling services
-# (CDP-mode start_chrome) treating this file as a readiness signal don't
-# launch chrome too early.
-echo "$DBUS_SESSION_BUS_ADDRESS" > /tmp/.dbus-session-bus
-chmod 0644 /tmp/.dbus-session-bus
-
-# Panel
-tint2 -c /build/config/tint2rc &
 
 # WM in foreground; openbox exiting tears down the session and supervisord restarts vnc.
 exec openbox

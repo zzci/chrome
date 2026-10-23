@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Session DBus on the fixed address from session_env. A stale socket left by
+# a crashed daemon would make the bind fail, so it is cleared first.
+
+rm -f /tmp/.dbus-session
+exec /build/bin/session_exec dbus-daemon --session --nofork --nopidfile \
+    --address=unix:path=/tmp/.dbus-session

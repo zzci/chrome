@@ -39,7 +39,7 @@ Switch X provider via `ZSRV_DESKTOP`:
 
 | ENV | Stack | Web port | Use case |
 |-----|-------|----------|----------|
-| `ZSRV_DESKTOP=vnc` (default) | KasmVNC + tint2 + openbox | 80 | Full web desktop |
+| `ZSRV_DESKTOP=vnc` (default) | KasmVNC + openbox | 80 | Full web desktop |
 | `ZSRV_DESKTOP=xvfb` | Xvfb (headless) | — | CDP-only / lowest overhead |
 | `ZSRV_DESKTOP=0` | none | — | Bring-your-own X |
 
@@ -51,6 +51,16 @@ Switch CDP behavior via `ZSRV_CDP` and `CDP_MODE`:
 | `ZSRV_CDP=0` | no chrome auto-launch (start it manually from the panel) |
 | `CDP_MODE=remote` (default) | `socat` exposes chrome's 19222 on `0.0.0.0:9222` |
 | `CDP_MODE=local` | no port forward; CDP only reachable inside the container at `127.0.0.1:19222` |
+
+Desktop session services, each supervised and restarted on its own (all on by default):
+
+| ENV | Effect |
+|-----|--------|
+| `ZSRV_dbus=true` | session DBus on a fixed address (`unix:path=/tmp/.dbus-session`) |
+| `ZSRV_fcitx5=true` | fcitx5 + rime input method (needs `ZSRV_dbus`) |
+| `ZSRV_panel=true` | tint2 panel (launchers, taskbar, IME indicator, clock) |
+
+Set any of them to `0` to skip it, e.g. `-e ZSRV_panel=0` in xvfb mode where nobody sees the panel.
 
 Other runtime knobs:
 
@@ -100,14 +110,22 @@ Drop the `devices:` block (or set `GPU=off`) on a host without `/dev/dri`.
 
 ```
 rootfs/build/services/         service catalog (default-disabled, enabled via ZSRV)
-  vnc.conf                     KasmVNC + dbus + tint2 + openbox
+  vnc.conf                     KasmVNC + openbox
   xvfb.conf                    Xvfb (alternative X provider)
   cdp.conf                     chrome (kept alive) + socat 9222->19222
+  dbus.conf                    session DBus (fixed address)
+  fcitx5.conf                  fcitx5 input method daemon
+  panel.conf                   tint2 panel
 
 rootfs/build/bin/
   init_user                    one-shot user/uid/gid + home reconcile (root)
   start_vnc                    KasmVNC bootstrap → drops to RUN_USER
-  start_x                      xstartup: dbus + fcitx5 + tint2 + openbox
+  start_x                      xstartup: openbox
+  start_dbus                   session DBus on the fixed address
+  start_fcitx5                 fcitx5 (first-run config + foreground daemon)
+  start_panel                  tint2 panel
+  session_exec                 run a command as RUN_USER once the X session is up
+  session_env                  shared session env (DISPLAY, DBus address, IM vars)
   start_xvfb                   Xvfb :1 (headless mode)
   start_cdp                    chrome keep-alive loop + socat
   start_chrome                 CDP-flavored chrome launch (used by start_cdp)

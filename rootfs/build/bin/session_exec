@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Run a command as $RUN_USER inside the X session, once the session is up.
+# Shared entry for the per-process desktop services (dbus, fcitx5, panel),
+# so each one is supervised and restarted on its own.
+#
+# Blocks instead of failing fast while waiting: supervisord marks a program
+# FATAL after a few exits within startsecs and never retries it again.
+
+: "${RUN_USER:=zzci}"
+
+# The X provider (vnc/xvfb) creates the user and reconciles its uid first.
+until id "$RUN_USER" >/dev/null 2>&1; do sleep 0.5; done
+runuser -u "$RUN_USER" -- /build/bin/wait_for_x || exit 1
+
+# Fresh runuser after X is up, so the uid is the reconciled one.
+. /build/bin/session_env
+exec runuser -u "$RUN_USER" -- "$@"

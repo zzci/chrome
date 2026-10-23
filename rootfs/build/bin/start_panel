@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# tint2 panel (launchers, taskbar, IME indicator, clock).
+
+exec /build/bin/session_exec tint2 -c /build/config/tint2rc

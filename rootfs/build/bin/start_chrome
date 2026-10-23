@@ -5,25 +5,23 @@
 : "${RUN_USER:=zzci}"
 : "${RUN_HOME:=/home/$RUN_USER}"
 
-# Wait briefly for the X session to publish the DBus address (only present
-# in vnc mode; xvfb mode has no DBus and the loop times out harmlessly).
-DBUS_ADDR=""
-for _ in $(seq 1 20); do
-    if [ -s /tmp/.dbus-session-bus ]; then
-        DBUS_ADDR=$(cat /tmp/.dbus-session-bus)
-        break
-    fi
-    sleep 0.3
-done
-
 rm -f "$RUN_HOME/.config/chrome/Singleton"* 2>/dev/null || true
 
-exec env DBUS_SESSION_BUS_ADDRESS="$DBUS_ADDR" RUN_HOME="$RUN_HOME" \
+exec env RUN_HOME="$RUN_HOME" \
     runuser -u "$RUN_USER" -- /bin/sh -c '
-    export DISPLAY=:1 HOME="$RUN_HOME" \
-        GTK_IM_MODULE=fcitx QT_IM_MODULE=fcitx XMODIFIERS=@im=fcitx
+    . /build/bin/session_env
+    export HOME="$RUN_HOME"
 
     /build/bin/wait_for_x || exit 1
+
+    # Wait briefly for fcitx5 on the session bus: chrome binds its GTK IM
+    # module at startup. Times out harmlessly when ZSRV_fcitx5 is disabled.
+    for _ in $(seq 1 40); do
+        dbus-send --session --print-reply --dest=org.freedesktop.DBus \
+            / org.freedesktop.DBus.NameHasOwner string:org.fcitx.Fcitx5 \
+            2>/dev/null | grep -q true && break
+        sleep 0.3
+    done
 
     . /build/bin/chrome_flags
 

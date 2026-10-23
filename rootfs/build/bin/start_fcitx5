@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# fcitx5 input method daemon, in the foreground so supervisord restarts it.
+# It exits when it loses the session bus, so a dbus restart brings it back
+# on its own.
+
+exec /build/bin/session_exec /bin/sh -c '
+    # First-run fcitx5 config — rime+pinyin_simp, Ctrl+\ toggle.
+    # rime addon ships with OnDemand=True so it would lazy-load only on
+    # explicit activation; fcitx5-rime.conf overrides that so the chrome
+    # GTK module finds rime ready at first connection.
+    mkdir -p "$HOME/.config/fcitx5/conf"
+    [ -f "$HOME/.config/fcitx5/profile" ]    || cp /build/config/fcitx5-profile   "$HOME/.config/fcitx5/profile"
+    [ -f "$HOME/.config/fcitx5/config" ]     || cp /build/config/fcitx5-config    "$HOME/.config/fcitx5/config"
+    [ -f "$HOME/.config/fcitx5/conf/rime.conf" ] || cp /build/config/fcitx5-rime.conf "$HOME/.config/fcitx5/conf/rime.conf"
+    mkdir -p "$HOME/.local/share/fcitx5/rime"
+    [ -f "$HOME/.local/share/fcitx5/rime/default.custom.yaml" ] || \
+        cp /build/config/rime-default.custom.yaml "$HOME/.local/share/fcitx5/rime/default.custom.yaml"
+
+    # Without the bus fcitx5 starts but GTK clients can never reach it.
+    until dbus-send --session --print-reply --dest=org.freedesktop.DBus \
+        / org.freedesktop.DBus.GetId >/dev/null 2>&1; do
+        sleep 0.5
+    done
+
+    exec fcitx5 --replace
+'

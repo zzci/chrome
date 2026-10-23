@@ -39,7 +39,7 @@ docker run -d \
 
 | 环境变量 | 启用栈 | Web 端口 | 适用场景 |
 |---------|-------|---------|---------|
-| `ZSRV_DESKTOP=vnc`（默认） | KasmVNC + tint2 + openbox | 80 | 完整 web 桌面 |
+| `ZSRV_DESKTOP=vnc`（默认） | KasmVNC + openbox | 80 | 完整 web 桌面 |
 | `ZSRV_DESKTOP=xvfb` | Xvfb（无显示） | — | 仅 CDP / 最小开销 |
 | `ZSRV_DESKTOP=0` | 无 X | — | 自带 X 提供方 |
 
@@ -51,6 +51,16 @@ docker run -d \
 | `ZSRV_CDP=0` | 不自动启动 chrome（用户自己从 panel 启动） |
 | `CDP_MODE=remote`（默认） | `socat` 把 chrome 的 19222 暴露到 `0.0.0.0:9222` |
 | `CDP_MODE=local` | 不做端口转发；CDP 仅容器内 `127.0.0.1:19222` 可达 |
+
+桌面会话服务，各自由 supervisord 独立守护、挂了自动拉起（默认全部开启）：
+
+| 环境变量 | 行为 |
+|---------|------|
+| `ZSRV_dbus=true` | 会话 DBus，固定地址 `unix:path=/tmp/.dbus-session` |
+| `ZSRV_fcitx5=true` | fcitx5 + rime 输入法（依赖 `ZSRV_dbus`） |
+| `ZSRV_panel=true` | tint2 面板（启动器、任务栏、输入法指示、时钟） |
+
+任一项设为 `0` 即可关闭，例如 xvfb 模式下没人看面板，可加 `-e ZSRV_panel=0`。
 
 其它运行时配置:
 
@@ -100,14 +110,22 @@ docker run -d -e CDP_MODE=local zzci/chrome
 
 ```
 rootfs/build/services/         服务清单（默认全部禁用，由 ZSRV 启用）
-  vnc.conf                     KasmVNC + dbus + tint2 + openbox
+  vnc.conf                     KasmVNC + openbox
   xvfb.conf                    Xvfb（轻量 X 提供方）
   cdp.conf                     chrome（保活循环）+ socat 9222→19222
+  dbus.conf                    会话 DBus（固定地址）
+  fcitx5.conf                  fcitx5 输入法守护进程
+  panel.conf                   tint2 面板
 
 rootfs/build/bin/
   init_user                    一次性 root 初始化:用户/UID/GID/家目录
   start_vnc                    KasmVNC 入口,先 init_user 再切到 RUN_USER
-  start_x                      xstartup: dbus + fcitx5 + tint2 + openbox
+  start_x                      xstartup: openbox
+  start_dbus                   在固定地址启动会话 DBus
+  start_fcitx5                 fcitx5(首次配置 + 前台运行)
+  start_panel                  tint2 面板
+  session_exec                 等 X 会话就绪后以 RUN_USER 执行命令
+  session_env                  会话公共环境(DISPLAY、DBus 地址、输入法变量)
   start_xvfb                   启动 Xvfb :1(无显示模式)
   start_cdp                    chrome 保活循环 + socat 端口转发
   start_chrome                 CDP 模式 chrome 启动(被 start_cdp 调用)

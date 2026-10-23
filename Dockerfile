@@ -75,13 +75,17 @@ EXPOSE 80 9222
 
 # Runtime user (created lazily by init_user; override with -e RUN_USER=foo)
 # Service composition via ubase ZSRV_<KEY>=<conf-filename> env vars:
-#   X provider: ZSRV_DESKTOP=vnc (KasmVNC + tint2 panel) | xvfb (headless)
+#   X provider: ZSRV_DESKTOP=vnc (KasmVNC + openbox) | xvfb (headless)
+#   Session:    ZSRV_dbus / ZSRV_fcitx5 / ZSRV_panel (session bus, IME, tint2)
 #   Apps:       ZSRV_CDP=cdp (chrome + 9222 forward)
 # Disable any at runtime with -e ZSRV_<KEY>=0
 # GPU=auto uses /dev/dri when it is passed through and accessible; GPU=off
 # forces software rendering.
 ENV RUN_USER=zzci \
     ZSRV_DESKTOP=vnc \
+    ZSRV_dbus=true \
+    ZSRV_fcitx5=true \
+    ZSRV_panel=true \
     ZSRV_CDP=cdp \
     GPU=auto
 

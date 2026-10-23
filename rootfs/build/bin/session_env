@@ -1,0 +1,6 @@
+# Shared X session environment, sourced by every process that joins the
+# desktop (openbox, panel, fcitx5, chrome). The session bus lives on a fixed
+# socket so a restarted dbus service keeps the same address for everyone.
+export DISPLAY=:1 \
+    DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/.dbus-session \
+    GTK_IM_MODULE=fcitx QT_IM_MODULE=fcitx XMODIFIERS=@im=fcitx

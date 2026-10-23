@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # KasmVNC bootstrap. Privileged setup runs as root, then the X session
-# (vncserver, openbox, tint2, fcitx5, chrome) is launched as $RUN_USER
-# so all user processes share one DBus session bus and one home dir.
+# (vncserver, openbox) is launched as $RUN_USER. dbus, fcitx5 and the
+# panel are separate services that join this session as the same user.
 
 set -e
 
@@ -35,18 +35,6 @@ exec runuser -u "$RUN_USER" -- /bin/sh -c '
     # from a frozen browser. Only the old literal is rewritten, so a value
     # the user chose deliberately is left alone.
     sed -i "s/^\\( *idle_timeout:\\) *1800 *\$/\\1 never/" "$HOME/.vnc/kasmvnc.yaml"
-
-    # First-run fcitx5 config — rime+pinyin_simp, Ctrl+\ toggle.
-    # rime addon ships with OnDemand=True so it would lazy-load only on
-    # explicit activation; fcitx5-rime.conf overrides that so the chrome
-    # GTK module finds rime ready at first connection.
-    mkdir -p "$HOME/.config/fcitx5/conf"
-    [ -f "$HOME/.config/fcitx5/profile" ]    || cp /build/config/fcitx5-profile   "$HOME/.config/fcitx5/profile"
-    [ -f "$HOME/.config/fcitx5/config" ]     || cp /build/config/fcitx5-config    "$HOME/.config/fcitx5/config"
-    [ -f "$HOME/.config/fcitx5/conf/rime.conf" ] || cp /build/config/fcitx5-rime.conf "$HOME/.config/fcitx5/conf/rime.conf"
-    mkdir -p "$HOME/.local/share/fcitx5/rime"
-    [ -f "$HOME/.local/share/fcitx5/rime/default.custom.yaml" ] || \
-        cp /build/config/rime-default.custom.yaml "$HOME/.local/share/fcitx5/rime/default.custom.yaml"
 
     # Hardware 3D when a DRI render node was passed through. Given on the
     # command line rather than written into kasmvnc.yaml so that a persisted
